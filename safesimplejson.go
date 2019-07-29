@@ -2,6 +2,7 @@ package safesimplejson
 
 import (
 	"github.com/bitly/go-simplejson"
+	"io"
 	"sync"
 )
 
@@ -29,6 +30,21 @@ func New() *Json {
 	return &Json{new(sync.Mutex), simplejson.New()}
 }
 
+func NewFromReader(r io.Reader) (*Json, error) {
+	j, err := simplejson.NewFromReader(r)
+	if err != nil {
+		return nil, err
+	}
+	return &Json{new(sync.Mutex), j}, nil
+}
+
+// Implements the json.Unmarshaler interface.
+func (j *Json) UnmarshalJSON(p []byte) error {
+	j.l.Lock()
+	defer j.l.Unlock()
+	return j.sj.UnmarshalJSON(p)
+}
+
 // Interface returns the underlying data
 func (j *Json) Interface() interface{} {
 	j.l.Lock()
@@ -38,6 +54,8 @@ func (j *Json) Interface() interface{} {
 
 // Encode returns its marshaled data as `[]byte`
 func (j *Json) Encode() ([]byte, error) {
+	j.l.Lock()
+	defer j.l.Unlock()
 	return j.sj.MarshalJSON()
 }
 
@@ -264,4 +282,32 @@ func (j *Json) MustUint64(args ...uint64) uint64 {
 	j.l.Lock()
 	defer j.l.Unlock()
 	return j.sj.MustUint64(args...)
+}
+
+// Float64 coerces into a float64
+func (j *Json) Float64() (float64, error) {
+	j.l.Lock()
+	defer j.l.Unlock()
+	return j.sj.Float64()
+}
+
+// Int coerces into an int
+func (j *Json) Int() (int, error) {
+	j.l.Lock()
+	defer j.l.Unlock()
+	return j.sj.Int()
+}
+
+// Int64 coerces into an int64
+func (j *Json) Int64() (int64, error) {
+	j.l.Lock()
+	defer j.l.Unlock()
+	return j.sj.Int64()
+}
+
+// Uint64 coerces into an uint64
+func (j *Json) Uint64() (uint64, error) {
+	j.l.Lock()
+	defer j.l.Unlock()
+	return j.sj.Uint64()
 }
